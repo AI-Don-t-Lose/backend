@@ -1,0 +1,18 @@
+services:
+  testdb:
+    image: "postgres:16.1-alpine3.19"
+    ports:
+      - "15432:5432" # avoid port collision with the local
+
+    restart: on-failure
+    hostname: postgres
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=test
+      - ALLOW_IP_RANGE=0.0.0.0/0
+
+    volumes:
+      - ./dbrestore:/docker-entrypoint-initdb.d
+      - ./dbdata:/var/run/postgresql/data
