@@ -1,6 +1,7 @@
 # AIDL(AI Don't lose)
 
 ## Project 세팅
+
 ```bash
 $ pnpm install
 
@@ -12,6 +13,7 @@ $ docker compose -f docker-compose.yml down
 ```
 
 ## 컴파일 및 시작
+
 ```bash
 # development
 $ pnpm run start
@@ -30,6 +32,7 @@ $ docker stop aidl && docker rm aidl && docker rmi aidl
 ```
 
 ## 테스트
+
 ```bash
 # unit tests
 $ pnpm run test
@@ -39,4 +42,20 @@ $ pnpm run test:e2e
 
 # test coverage
 $ pnpm run test:cov
+```
+
+## env 파일
+
+```bash
+$ cp .env.example .env
+```
+
+## db migration
+
+```bash
+# migration 파일 기준으로 migration (db 연결 되어 있어야만 동작)
+$ npx prisma migrate dev
+
+# schema.prisma 파일 포맷팅
+$ npx prisma format
 ```
