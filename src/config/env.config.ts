@@ -1,11 +1,10 @@
 import { ConfigModuleOptions } from '@nestjs/config';
-import { number, object, string } from 'joi';
+import Joi from 'joi';
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access  */
-const validationSchema = object({
-  DATABASE_URL: string().required(),
-  SERVER_PORT: number().default(3000),
-  SWAGGER_PATH: string().default('api'),
+const validationSchema = Joi.object({
+  DATABASE_URL: Joi.string().required(),
+  SERVER_PORT: Joi.number().default(3000),
+  SWAGGER_PATH: Joi.string().default('api'),
 })
   .unknown()
   .required();

@@ -22,9 +22,12 @@ async function bootstrap() {
 
   SwaggerModule.setup(swaggerPath, app, document);
 
+  app.enableShutdownHooks();
+
   await app.listen(port);
 }
 
-bootstrap().catch(() => {
+bootstrap().catch((error: unknown) => {
+  console.error(error);
   exit(1);
 });
