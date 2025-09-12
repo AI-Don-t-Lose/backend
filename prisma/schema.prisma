@@ -17,12 +17,14 @@ datasource db {
 model Auth {
   id         String    @id @default(uuid()) @db.Uuid
   sequence   Int       @default(autoincrement())
-  externalId String    @db.VarChar(255) @map("external_id")
+  externalId String    @map("external_id") @db.VarChar(255)
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
-  deletedAt  DateTime? @db.Timestamptz() @map("deleted_at")
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz()
 
   recommendations Recommendation[]
+  consumption     Consumption[]
+  Stat            Stat[]
 
   @@map("auth")
 }
@@ -30,9 +32,9 @@ model Auth {
 model Recommendation {
   id            String    @id @default(uuid()) @db.Uuid
   sequence      Int       @default(autoincrement())
-  stockName     String    @db.VarChar(255) @map("stock_name")
-  userId        String    @db.Uuid @map("user_id")
-  recommendedAt DateTime? @db.Timestamptz() @map("recommended_at")
+  stockName     String    @map("stock_name") @db.VarChar(255)
+  userId        String    @map("user_id") @db.Uuid
+  recommendedAt DateTime? @map("recommended_at") @db.Timestamptz()
   score         Float?    @db.DoublePrecision
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -40,4 +42,55 @@ model Recommendation {
   user Auth @relation(fields: [userId], references: [id])
 
   @@map("recommendations")
+}
+
+model Category {
+  id           String   @id @default(uuid()) @db.Uuid
+  categoryName String   @map("category_name") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  Store Store?
+  Stat  Stat[]
+
+  @@map("categories")
+}
+
+model Store {
+  id         String   @id @default(uuid()) @db.Uuid
+  storeName  String   @map("store_name") @db.VarChar(255)
+  categoryId String?  @unique @map("category_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  category    Category?     @relation(fields: [categoryId], references: [id])
+  consumption Consumption[]
+
+  @@map("stores")
+}
+
+model Consumption {
+  id           String   @id @default(uuid()) @db.Uuid
+  purchaseTime DateTime @map("purchase_time") @db.Timestamptz()
+  amount       Int      @map("amount") @db.Integer
+  storeId      String   @map("store_id") @db.Uuid
+  authId       String   @map("auth_id") @db.Uuid
+
+  store Store @relation(fields: [storeId], references: [id])
+  auth  Auth  @relation(fields: [authId], references: [id])
+
+  @@map("consumptions")
+}
+
+model Stat {
+  id                   String   @id @default(uuid()) @db.Uuid
+  authId               String   @map("auth_id") @db.Uuid
+  categoryId           String   @map("category_id") @db.Uuid
+  consumptionYearMonth DateTime @map("consumption_year_month") @db.Timestamptz()
+  percentage           Float    @map("percentage") @db.DoublePrecision
+
+  auth     Auth     @relation(fields: [authId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@map("stats")
 }
