@@ -4,9 +4,10 @@ import { AppController } from 'src/app.controller';
 import { AppService } from 'src/app.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { envConfig } from 'src/config/env.config';
+import { StockModule } from './stock/stock.module';
 
 @Module({
-  imports: [PrismaModule, ConfigModule.forRoot(envConfig)],
+  imports: [PrismaModule, ConfigModule.forRoot(envConfig), StockModule],
   controllers: [AppController],
   providers: [AppService],
 })
