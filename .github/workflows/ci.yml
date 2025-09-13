@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  build:
+    environment: CI
+    env:
+      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check migration SQL timestamp order
+        run: |
+          set -e
+
+          # Get the base branch name
+          BASE_BRANCH="${{ github.base_ref }}"
+          if [ -z "$BASE_BRANCH" ]; then
+            BASE_BRANCH="${{ github.ref_name }}"
+          fi
+
+          # Get the base branch's latest migration timestamp
+          git fetch origin "$BASE_BRANCH":"origin/$BASE_BRANCH"
+          BASE_FILES=$(git ls-tree -r origin/$BASE_BRANCH --name-only | grep '^prisma/migrations/.*\.sql$' || true)
+          BASE_MAX=$(echo "$BASE_FILES" | grep -oE '[0-9]{14}' | sort -n | tail -1)
+
+          # Get the new migration files added in this branch
+          ADDED_FILES=$(git diff --diff-filter=A --name-only origin/$BASE_BRANCH...HEAD | grep '^prisma/migrations/.*\.sql$' || true)
+          if [ -z "$ADDED_FILES" ]; then
+            echo "No new migration files added."
+            exit 0
+          fi
+
+          # Check if the new migration files have a later timestamp than the base branch's latest migration timestamp
+          IS_VALID=1
+          for f in $ADDED_FILES; do
+            TS=$(echo "$f" | grep -oE '[0-9]{12,}')
+            if [ -z "$TS" ]; then
+              IS_VALID=0
+            elif [ "$TS" -le "$BASE_MAX" ]; then
+              IS_VALID=0
+            fi
+          done
+
+          if [ "$IS_VALID" -eq 0 ]; then
+            echo "Migration timestamp check failed."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - name: Setup postgres
+        run: docker compose -f docker-compose.yml up -d
+
+      - name: Wait for postgres to be ready
+        run: |
+          until docker compose exec testdb pg_isready -U app -d test; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Generate Prisma client
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: postgresql://app:password@localhost:15432/test
+
+      - name: Run database migrations
+        run: pnpm prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://app:password@localhost:15432/test
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test
+        env:
+          DATABASE_URL: postgresql://app:password@localhost:15432/test
+
+      - name: Build and test Docker image
+        run: docker build -t aidl-test . && docker run --rm -e DATABASE_URL=postgresql://app:password@host.docker.internal:15432/test aidl-test echo "✅ Docker image built and runs successfully"
+
+      - name: Turn off Postgres
+        run: docker compose -f docker-compose.yml down
