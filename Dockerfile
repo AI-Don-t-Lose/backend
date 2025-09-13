@@ -12,6 +12,8 @@ RUN pnpm install
 
 COPY . .
 
+RUN pnpm prisma generate
+
 RUN pnpm build
 
 RUN pnpm install --prod
