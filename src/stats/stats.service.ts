@@ -36,19 +36,18 @@ export class StatsService {
 
       const prompt = `"${storeName}"이라는 상점을 적절한 카테고리로 분류해주세요.
 
-      기존 카테고리가 있다면 이와 동일하거나 가장 유사한 방식으로 분류해주세요:
-      ${categoryList || '식음료, 교통, 쇼핑, 의료, 교육, 엔터테인먼트, 생활서비스, 금융, 통신, 기타'}
+      아래는 기존 카테고리가 있다면 이와 동일하거나 가장 유사한 방식으로 분류해주세요:
+      ${categoryList}
 
-      카테고리명만 응답해주세요.`;
+      아래는 카테고리명에 대한 예시입니다.:
+      '식음료, 교통, 쇼핑, 의료, 교육, 엔터테인먼트, 생활서비스, 금융, 통신, 기타'
+
+      카테고리명만 응답해주세요. 다만 실제로 카테고리로 분류할 수 없다면 '기타'로 반환해 주세요`;
 
       const result = await model.generateContent(prompt);
       const category = result.response.text().trim();
 
-      // DB에 있는 카테고리인지 확인
-      const validCategory = existingCategories.find(
-        (c) => c.categoryName === category,
-      );
-      return validCategory ? category : '기타';
+      return category;
     } catch (error) {
       this.logger.error(
         `Failed to classify merchant category for ${storeName}:`,
@@ -341,10 +340,12 @@ export class StatsService {
       date: new Date(
         Date.UTC(lastMonth.getFullYear(), lastMonth.getMonth(), 1, 0, 0, 0, 0),
       ).toISOString(),
-      stats: statsData.map((stat) => ({
-        category: stat.category.categoryName,
-        percentage: stat.percentage,
-      })),
+      stats: statsData
+        .map((stat) => ({
+          category: stat.category.categoryName,
+          percentage: stat.percentage,
+        }))
+        .sort((a, b) => b.percentage - a.percentage),
     };
   }
 }
