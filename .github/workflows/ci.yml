@@ -1,18 +1,18 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: ['main']
-  pull_request:
-    branches: ['**']
+    branches: [main]
 
 jobs:
-  build:
-    environment: CI
-    env:
-      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-
+  test:
+    name: Build & Test
     runs-on: ubuntu-latest
+    environment: CI
+
+    env:
+      DATABASE_URL: postgresql://app:password@localhost:15432/test
+      NODE_ENV: test
 
     steps:
       - name: Checkout
@@ -58,7 +58,7 @@ jobs:
             exit 1
           fi
 
-      - name: Setup Node.js
+      - name: Setup Node.js & pnpm
         uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -68,39 +68,53 @@ jobs:
         with:
           version: 10.15.0
 
-      - name: Setup postgres
-        run: docker compose -f docker-compose.yml up -d
-
-      - name: Wait for postgres to be ready
-        run: |
-          until docker compose exec testdb pg_isready -U app -d test; do
-            echo "Waiting for postgres..."
-            sleep 2
-          done
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      - name: Generate Prisma client
-        run: pnpm prisma generate
-        env:
-          DATABASE_URL: postgresql://app:password@localhost:15432/test
+      - name: Lint & Format Check
+        run: |
+          pnpm lint
+          pnpm format:check
 
-      - name: Run database migrations
-        run: pnpm prisma migrate deploy
-        env:
-          DATABASE_URL: postgresql://app:password@localhost:15432/test
+      - name: Type Check
+        run: pnpm typecheck
 
-      - name: Build application
+      - name: Start Database
+        run: docker compose up -d testdb
+
+      - name: Wait for Database
+        run: |
+          timeout 60 sh -c 'until docker compose exec testdb pg_isready -U app -d test; do
+            echo "⏳ Waiting for PostgreSQL..."
+            sleep 2
+          done'
+          echo "✅ PostgreSQL is ready"
+
+      - name: Setup Database
+        run: |
+          pnpm prisma generate
+          pnpm prisma migrate deploy
+
+      - name: Build Application
         run: pnpm build
 
-      - name: Run tests
+      - name: Run Tests
         run: pnpm test
-        env:
-          DATABASE_URL: postgresql://app:password@localhost:15432/test
 
-      - name: Build and test Docker image
-        run: docker build -t aidl-test . && docker run --rm -e DATABASE_URL=postgresql://app:password@host.docker.internal:15432/test aidl-test echo "✅ Docker image built and runs successfully"
+      - name: Docker Build Test
+        run: |
+          echo "🐳 Building Docker image..."
+          docker build -t aidl-backend .
+          echo "✅ Docker image built successfully"
 
-      - name: Turn off Postgres
-        run: docker compose -f docker-compose.yml down
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
