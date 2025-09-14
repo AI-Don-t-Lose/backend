@@ -7,6 +7,7 @@ const validationSchema = Joi.object({
   SWAGGER_PATH: Joi.string().default('api'),
   STOCK_API_KEY: Joi.string().required(),
   JWT_SECRET: Joi.string().required(),
+  GEMINI_API_KEY: Joi.string().required(),
 })
   .unknown()
   .required();

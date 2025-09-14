@@ -11,6 +11,13 @@ async function bootstrap() {
   const app: INestApplication = await NestFactory.create(AppModule);
   const config: ConfigService = app.get<ConfigService>(ConfigService);
 
+  // CORS 설정
+  app.enableCors({
+    origin: true, // 개발 환경에서는 모든 origin 허용
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
   const swaggerPath: string = config.get<string>('SWAGGER_PATH')!;
   const port: string = config.get<string>('SERVER_PORT')!;
   const document: OpenAPIObject = SwaggerModule.createDocument(
