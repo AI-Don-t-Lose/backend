@@ -7,6 +7,7 @@ import { envConfig } from 'src/config/env.config';
 import { StockModule } from './stock/stock.module';
 import { AuthModule } from './auth/auth.module';
 import { StatsModule } from './stats/stats.module';
+import { RecommendModule } from './recommend/recommend.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { StatsModule } from './stats/stats.module';
     StockModule,
     AuthModule,
     StatsModule,
+    RecommendModule,
   ],
   controllers: [AppController],
   providers: [AppService],
