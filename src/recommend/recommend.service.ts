@@ -297,7 +297,7 @@ export class RecommendService {
 
 사용자의 소비 패턴: ${statsDescription}
 
-다음 내용을 포함해서 JSON 형태로 응답해주세요:
+아래와 같은 형식으로 JSON 형태로 응답해주세요:
 {
   "reason": "사용자의 소비 패턴과 연관하여 왜 이 주식을 추천하는지 구체적으로 설명 (100-200자)",
   "contents": "전날 기준 주식 브리핑 및 시장 분석, 주가 동향, 실적 전망 등 (300-500자)",
@@ -319,7 +319,8 @@ export class RecommendService {
 - 뉴스 링크는 반드시 실제 존재하는 URL을 제공해주세요
 - 반드시 위의 JSON 형태로만 응답해주세요
 - 다른 설명, 주석, 마크다운 코드 블록은 절대 사용하지 마세요
-- JSON 객체 앞뒤로 어떤 텍스트도 추가하지 마세요`;
+- JSON 객체 앞뒤로 어떤 텍스트도 추가하지 마세요
+- '(예시 내용 - 실제 뉴스 내용 요약으로 교체)'와 같은 내용 넣기 금지`;
 
     try {
       const result = await model.generateContent(prompt);
