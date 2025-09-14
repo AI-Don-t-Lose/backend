@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { ExternalStockResponseDto } from './dto/external-stock-response.dto';
 import { ExternalStockRequestDto } from './dto/external-stock-request.dto';
 import { GetStockDto } from './dto/get-stock.dto';
+import { ConfigService } from '@nestjs/config';
 
 interface ApiResponse {
   response: ExternalStockResponseDto;
@@ -12,11 +13,16 @@ interface ApiResponse {
 @Injectable()
 export class StockService {
   private readonly logger = new Logger(StockService.name);
-  private readonly apiKey = process.env.STOCK_API_KEY;
+  private readonly apiKey: string;
   private readonly baseUrl =
     'https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo';
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {
+    this.apiKey = configService.get<string>('STOCK_API_KEY')!;
+  }
 
   async getStockPrice(
     stockName: string,

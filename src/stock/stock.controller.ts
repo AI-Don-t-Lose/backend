@@ -5,7 +5,7 @@ import { StockService } from './stock.service';
 export class StockController {
   constructor(private readonly stockService: StockService) {}
 
-  @Get(':name')
+  @Get('price/:name')
   async getStockPrice(@Param('name') name: string) {
     try {
       const stockPrice = await this.stockService.getStockPrice(
