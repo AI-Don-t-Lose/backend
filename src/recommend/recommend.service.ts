@@ -58,7 +58,7 @@ export class RecommendService {
           lte: monthEnd,
         },
       },
-      orderBy: { sequence: 'asc' },
+      orderBy: { score: 'desc' },
       take: 3,
     });
 
@@ -75,12 +75,20 @@ export class RecommendService {
     const recommendations =
       await this.generateRecommendations(consumptionStats);
 
+    if (recommendations.length === 0) {
+      return {
+        date: new Date().toISOString(),
+        stocks: [],
+      };
+    }
+
     const createdRecommendations = await Promise.all(
-      recommendations.map((stockName) =>
+      recommendations.map((rec) =>
         this.prisma.recommendation.create({
           data: {
             userId: user.id,
-            stockName,
+            stockName: rec.stockName,
+            score: rec.score,
             recommendedAt: new Date(),
           },
         }),
@@ -89,7 +97,9 @@ export class RecommendService {
 
     return {
       date: createdRecommendations[0].createdAt.toISOString(),
-      stocks: recommendations,
+      stocks: createdRecommendations
+        .sort((a, b) => (b.score || 0) - (a.score || 0))
+        .map((rec) => rec.stockName),
     };
   }
 
@@ -141,9 +151,9 @@ export class RecommendService {
 
   private async generateRecommendations(
     stats: { category: string; percentage: number }[],
-  ): Promise<string[]> {
+  ): Promise<{ stockName: string; score: number }[]> {
     if (stats.length === 0) {
-      return ['삼성전자', 'SK하이닉스', 'NAVER'];
+      return [];
     }
 
     const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -152,7 +162,7 @@ export class RecommendService {
       .map((stat) => `${stat.category}: ${stat.percentage}%`)
       .join(', ');
 
-    const prompt = `사용자의 지난달 소비 패턴을 분석하여 한국 주식 3개를 추천해주세요.
+    const prompt = `사용자의 지난달 소비 패턴을 분석하여 한국 주식 3개를 추천하고 각각의 추천 점수(0-100)를 매겨주세요.
 
 소비 패턴: ${statsDescription}
 
@@ -160,22 +170,30 @@ export class RecommendService {
 1. 소비 패턴과 연관성이 높은 업종의 주식
 2. 한국거래소에 상장된 실제 주식명
 3. 정확한 회사명으로 응답 (예: 삼성전자, LG화학, 네이버)
+4. 소비 패턴과의 연관성에 따라 0-100점 점수 부여
 
-응답 형식: "주식명1, 주식명2, 주식명3" (쉼표로 구분, 다른 설명 없이)`;
+응답 형식: "주식명1:점수1, 주식명2:점수2, 주식명3:점수3" (예: "삼성전자:85, LG화학:78, 네이버:82")`;
 
     try {
       const result = await model.generateContent(prompt);
       const response = result.response;
       const text = response.text().trim();
 
-      const stocks = text
+      const stocksWithScores = text
         .split(',')
-        .map((stock) => stock.trim())
-        .filter((stock) => stock.length > 0)
+        .map((item) => {
+          const [stockName, scoreStr] = item.trim().split(':');
+          const score = parseInt(scoreStr?.trim() || '0', 10);
+          return {
+            stockName: stockName?.trim() || '',
+            score: isNaN(score) ? 50 : score,
+          };
+        })
+        .filter((item) => item.stockName.length > 0)
         .slice(0, 3);
 
-      if (stocks.length === 3) {
-        return stocks;
+      if (stocksWithScores.length === 3) {
+        return stocksWithScores;
       }
     } catch (error) {
       this.logger.error(
@@ -184,6 +202,6 @@ export class RecommendService {
       );
     }
 
-    return ['삼성전자', 'SK하이닉스', 'NAVER'];
+    return [];
   }
 }
