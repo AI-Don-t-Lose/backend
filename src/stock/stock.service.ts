@@ -34,21 +34,66 @@ export class StockService {
         throw new Error('STOCK_API_KEY environment variable is not set');
       }
 
-      const dateString = date.toISOString().slice(0, 10).replace(/-/g, '');
+      // 최대 10일 전까지 데이터를 찾을 때까지 시도
+      let attempts = 0;
+      let requestDate = this.getLastTradingDate(date);
 
-      const externalResponse: ExternalStockResponseDto =
-        await this.fetchFromExternalAPI({
-          serviceKey: this.apiKey,
-          resultType: 'json',
-          basDt: dateString,
-          itmsNm: stockName,
-        });
+      while (attempts < 10) {
+        const dateString = requestDate
+          .toISOString()
+          .slice(0, 10)
+          .replace(/-/g, '');
 
-      return this.transformToGetStockDto(externalResponse, date);
+        const externalResponse: ExternalStockResponseDto =
+          await this.fetchFromExternalAPI({
+            serviceKey: this.apiKey,
+            resultType: 'json',
+            basDt: dateString,
+            itmsNm: stockName,
+          });
+
+        const result = this.transformToGetStockDto(
+          externalResponse,
+          requestDate,
+        );
+        if (result) {
+          return result;
+        }
+
+        // 데이터가 없으면 하루 전으로 이동
+        requestDate.setDate(requestDate.getDate() - 1);
+        requestDate = this.getLastTradingDate(requestDate);
+        attempts++;
+      }
+
+      return null;
     } catch (error) {
       this.logger.error(`Error fetching stock price for ${stockName}:`, error);
       throw error;
     }
+  }
+
+  private getLastTradingDate(date: Date): Date {
+    const targetDate = new Date(date);
+
+    // 주말과 공휴일을 고려하여 최근 거래일 찾기
+    // 최대 10일 전까지 확인 (공휴일 연휴 고려)
+    let attempts = 0;
+    while (attempts < 10) {
+      const dayOfWeek = targetDate.getDay();
+
+      // 주말이 아닌 평일이면 반환
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        return targetDate;
+      }
+
+      // 하루 전으로 이동
+      targetDate.setDate(targetDate.getDate() - 1);
+      attempts++;
+    }
+
+    // 10일 내에 거래일을 찾지 못하면 원본 날짜 반환
+    return new Date(date);
   }
 
   private async fetchFromExternalAPI(
