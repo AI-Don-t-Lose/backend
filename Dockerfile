@@ -18,6 +18,8 @@ RUN pnpm build
 
 RUN pnpm install --prod
 
+RUN pnpm prisma generate
+
 FROM node:22-alpine AS production
 
 ARG NODE_ENV=production
