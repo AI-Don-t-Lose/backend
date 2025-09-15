@@ -19,7 +19,7 @@ async function bootstrap() {
   });
 
   const swaggerPath: string = config.get<string>('SWAGGER_PATH')!;
-  const port: string = config.get<string>('SERVER_PORT')!;
+  const port: number = config.get<number>('PORT')!;
   const document: OpenAPIObject = SwaggerModule.createDocument(
     app,
     SwaggerConfig,
