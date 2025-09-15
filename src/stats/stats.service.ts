@@ -289,7 +289,7 @@ export class StatsService {
   }
 
   async getMonthlySpendingStats(userId: string): Promise<{
-    date: string;
+    date: number;
     stats: Array<{ category: string; percentage: number }>;
   }> {
     // external_id로 사용자 UUID 찾기
@@ -339,7 +339,7 @@ export class StatsService {
     return {
       date: new Date(
         Date.UTC(lastMonth.getFullYear(), lastMonth.getMonth(), 1, 0, 0, 0, 0),
-      ).toISOString(),
+      ).getTime(),
       stats: statsData
         .map((stat) => ({
           category: stat.category.categoryName,

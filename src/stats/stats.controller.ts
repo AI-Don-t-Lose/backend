@@ -9,7 +9,7 @@ interface StatsCategoryResponse {
 }
 
 interface StatsApiResponse {
-  date: string;
+  date: number;
   stats: StatsCategoryResponse[];
 }
 

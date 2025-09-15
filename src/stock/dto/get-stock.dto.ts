@@ -5,7 +5,7 @@ class PriceDto {
 }
 
 export class GetStockDto {
-  date: Date;
+  date: number;
   price: PriceDto;
   name: string;
 }

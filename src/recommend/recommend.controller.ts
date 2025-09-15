@@ -12,7 +12,7 @@ export class RecommendController {
   @Get()
   async getRecommendations(
     @Request() req: RequestWithUser,
-  ): Promise<{ date: string; stocks: string[] }> {
+  ): Promise<{ date: number; stocks: string[] }> {
     return this.recommendService.getRecommendations(req.userId!);
   }
 

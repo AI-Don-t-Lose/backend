@@ -65,7 +65,7 @@ export class RecommendService {
     if (existingRecommendations.length >= 3) {
       // 기존 추천이 3개 이상 있으면 그대로 반환 (sequence 순서로)
       return {
-        date: existingRecommendations[0].createdAt.toISOString(),
+        date: existingRecommendations[0].createdAt.getTime(),
         stocks: existingRecommendations.slice(0, 3).map((rec) => rec.stockName),
       };
     }
@@ -77,7 +77,7 @@ export class RecommendService {
 
     if (recommendations.length === 0) {
       return {
-        date: new Date().toISOString(),
+        date: new Date().getTime(),
         stocks: [],
       };
     }
@@ -96,7 +96,7 @@ export class RecommendService {
     );
 
     return {
-      date: createdRecommendations[0].createdAt.toISOString(),
+      date: createdRecommendations[0].createdAt.getTime(),
       stocks: createdRecommendations
         .sort((a, b) => (b.score || 0) - (a.score || 0))
         .map((rec) => rec.stockName),
@@ -360,7 +360,7 @@ export class RecommendService {
             {
               link: 'https://finance.naver.com',
               summary: '관련 뉴스를 현재 찾을 수 없습니다.',
-              date: yesterdayStart.toISOString().split('T')[0],
+              date: yesterdayStart.getTime(),
             },
           ],
         };
@@ -371,7 +371,7 @@ export class RecommendService {
         reason:
           aiResponse.reason || `${stockName} 추천 이유를 제공할 수 없습니다.`,
         summary: {
-          date: yesterdayStart.toISOString(),
+          date: yesterdayStart.getTime(),
           contents:
             aiResponse.contents ||
             `${stockName}에 대한 브리핑 정보를 제공할 수 없습니다.`,
@@ -379,7 +379,7 @@ export class RecommendService {
         news: (aiResponse.news || []).map((newsItem) => ({
           link: newsItem.link || 'https://finance.naver.com',
           summary: newsItem.summary || '뉴스 요약을 제공할 수 없습니다.',
-          date: new Date(`${newsItem.date}T00:00:00.000Z`).toISOString(),
+          date: new Date(`${newsItem.date}T00:00:00.000Z`).getTime(),
         })),
       };
     } catch (error) {
@@ -396,14 +396,14 @@ export class RecommendService {
         score: Math.round(existingRecommendation.score || 0),
         reason: `${stockName}는 사용자의 소비 패턴과 연관성이 높은 업종으로 투자 가치가 있습니다.`,
         summary: {
-          date: yesterdayStart.toISOString(),
+          date: yesterdayStart.getTime(),
           contents: `${stockName}에 대한 상세한 브리핑 정보를 현재 제공할 수 없습니다.`,
         },
         news: [
           {
             link: 'https://finance.naver.com',
             summary: '관련 뉴스를 현재 제공할 수 없습니다.',
-            date: yesterdayStart.toISOString(),
+            date: yesterdayStart.getTime(),
           },
         ],
       };

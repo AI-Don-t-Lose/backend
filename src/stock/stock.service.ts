@@ -127,7 +127,7 @@ export class StockService {
     const stockItem = externalResponse.body.items.item[0];
 
     return {
-      date: date,
+      date: date.getTime(),
       price: {
         current: parseFloat(stockItem.mkp) || 0,
         fluctuationRate: parseFloat(stockItem.fltRt) || 0,
